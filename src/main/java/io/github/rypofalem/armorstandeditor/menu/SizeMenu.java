@@ -24,18 +24,15 @@ import java.util.Map;
 public class SizeMenu extends ASEHolder {
 
     public ArmorStandEditorPlugin plugin;
-    Inventory menuInv;
-    private Debug debug;
-    private PlayerEditor pe;
-    private ArmorStand as;
-    static Component name;
+    private final Inventory menuInv;
+    private final PlayerEditor pe;
+    private final ArmorStand as;
 
     public SizeMenu(PlayerEditor pe, ArmorStand as) {
         this.pe = pe;
         this.as = as;
-        this.debug = pe.plugin.debug;
         this.plugin = pe.plugin;
-        name = pe.plugin.getLang().getMessage("sizeMenu", "menutitle");
+        Component name = pe.plugin.getLang().getMessage("sizeMenu", "menutitle");
         menuInv = Bukkit.createInventory(pe.getManager().getSizeMenuHolder(), 27, name);
     }
 
@@ -68,28 +65,24 @@ public class SizeMenu extends ASEHolder {
         menuInv.setContents(items);
     }
 
-    private ItemStack createIcon(ItemStack icon, String path) {
-        return createIcon(icon, path, null);
-    }
-
     @SuppressWarnings("UnstableApiUsage")
-    private ItemStack createIcon(ItemStack icon, String path, String option) {
-        icon.setData(DataComponentTypes.CUSTOM_NAME, getIconName(path, option));
+    private ItemStack createIcon(ItemStack icon, String path) {
+        icon.setData(DataComponentTypes.CUSTOM_NAME, getIconName(path));
         icon.editPersistentDataContainer(pdc -> pdc.set(pe.plugin.getIconKey(), PersistentDataType.STRING, path));
-        icon.setData(DataComponentTypes.LORE, ItemLore.lore().addLine(getIconDescription(path, option)).build());
+        icon.setData(DataComponentTypes.LORE, ItemLore.lore().addLine(getIconDescription(path)).build());
         icon.setData(DataComponentTypes.TOOLTIP_DISPLAY, TooltipDisplay.tooltipDisplay()
             .addHiddenComponents(DataComponentTypes.ATTRIBUTE_MODIFIERS).build());
         return icon;
 
     }
 
-    private Component getIconName(String path, String option) {
-        return pe.plugin.getLang().getMessage(path, "iconname", option);
+    private Component getIconName(String path) {
+        return pe.plugin.getLang().getMessage(path, "iconname");
     }
 
 
-    private Component getIconDescription(String path, String option) {
-        return pe.plugin.getLang().getMessage(path + ".description", "icondescription", option);
+    private Component getIconDescription(String path) {
+        return pe.plugin.getLang().getMessage(path + ".description", "icondescription");
     }
 
 
@@ -152,7 +145,7 @@ public class SizeMenu extends ASEHolder {
     }
 
     private void setArmorStandScale(Player player, String itemName, double scaleValue) {
-        debug.log("Setting the Scale of the ArmorStand");
+        Debug.log("Setting the Scale of the ArmorStand");
         double currentScaleValue = 0;
         double newScaleValue;
 
@@ -161,51 +154,57 @@ public class SizeMenu extends ASEHolder {
         if (!player.hasPermission("asedit.togglesize")) return;
 
         // Basically go from 0 directly to ItemSize
-        if (itemName.equals("scale1") || itemName.equals("scale2") || itemName.equals("scale3")
-            || itemName.equals("scale4") || itemName.equals("scale5") || itemName.equals("scale6")
-            || itemName.equals("scale7") || itemName.equals("scale8") || itemName.equals("scale9")
-            || itemName.equals("scale10")) {
-            newScaleValue = currentScaleValue + scaleValue;
-            debug.log("Result of the scale Calculation: " + newScaleValue);
+        switch (itemName) {
+            case "scale1", "scale2", "scale3", "scale4", "scale5", "scale6", "scale7", "scale8", "scale9",
+                 "scale10" -> {
+                newScaleValue = currentScaleValue + scaleValue;
+                Debug.log("Result of the scale Calculation: " + newScaleValue);
 
-            if (newScaleValue > plugin.getMaxScaleValue()) {
-                pe.getPlayer().sendMessage(plugin.getLang().getMessage("scalemaxwarn", "warn"));
-            } else if (newScaleValue < plugin.getMinScaleValue()) {
-                pe.getPlayer().sendMessage(plugin.getLang().getMessage("scaleminwarn", "warn"));
-            } else {
+                if (newScaleValue > plugin.getMaxScaleValue()) {
+                    pe.getPlayer().sendMessage(plugin.getLang().getMessage("scalemaxwarn", "warn"));
+                } else if (newScaleValue < plugin.getMinScaleValue()) {
+                    pe.getPlayer().sendMessage(plugin.getLang().getMessage("scaleminwarn", "warn"));
+                } else {
+                    as.getAttribute(Attribute.SCALE).setBaseValue(newScaleValue);
+                }
+
+                // Add either 0.1 or 0.5 to the current
+            }
+            case "scaleadd12", "scaleadd110" -> {
+                currentScaleValue = as.getAttribute(Attribute.SCALE).getBaseValue(); //Get the current Value
+
+                newScaleValue = currentScaleValue + scaleValue; // Add for increments
+
+                Debug.log("Result of the scale Calculation: " + newScaleValue);
+                if (newScaleValue > plugin.getMaxScaleValue()) {
+                    pe.getPlayer().sendMessage(plugin.getLang().getMessage("scalemaxwarn", "warn"));
+                    return;
+                }
+                as.getAttribute(Attribute.SCALE).setBaseValue(newScaleValue);
+                //Subtract either 0.1 or 0.5 from the current
+            }
+            case "scaleremove12", "scaleremove110" -> {
+                currentScaleValue = as.getAttribute(Attribute.SCALE).getBaseValue();
+                newScaleValue = currentScaleValue - scaleValue; // Subtract for decrements
+
+                Debug.log("Result of the scale Calculation: " + newScaleValue);
+                if (newScaleValue < plugin.getMinScaleValue()) {
+                    pe.getPlayer().sendMessage(plugin.getLang().getMessage("scaleminwarn", "warn"));
+                    return;
+                }
                 as.getAttribute(Attribute.SCALE).setBaseValue(newScaleValue);
             }
-
-            // Add either 0.1 or 0.5 to the current
-        } else if (itemName.equals("scaleadd12") || itemName.equals("scaleadd110")) {
-            currentScaleValue = as.getAttribute(Attribute.SCALE).getBaseValue(); //Get the current Value
-            newScaleValue = currentScaleValue + scaleValue; // Add for increments
-            debug.log("Result of the scale Calculation: " + newScaleValue);
-            if (newScaleValue > plugin.getMaxScaleValue()) {
-                pe.getPlayer().sendMessage(plugin.getLang().getMessage("scalemaxwarn", "warn"));
-                return;
+            case "reset" -> {
+                newScaleValue = 1.0;
+                as.getAttribute(Attribute.SCALE).setBaseValue(newScaleValue);
             }
-            as.getAttribute(Attribute.SCALE).setBaseValue(newScaleValue);
-            //Subtract either 0.1 or 0.5 from the current
-        } else if (itemName.equals("scaleremove12") || itemName.equals("scaleremove110")) {
-            currentScaleValue = as.getAttribute(Attribute.SCALE).getBaseValue();
-            newScaleValue = currentScaleValue - scaleValue; // Subtract for decrements
-            debug.log("Result of the scale Calculation: " + newScaleValue);
-            if (newScaleValue < plugin.getMinScaleValue()) {
-                pe.getPlayer().sendMessage(plugin.getLang().getMessage("scaleminwarn", "warn"));
-                return;
-            }
-            as.getAttribute(Attribute.SCALE).setBaseValue(newScaleValue);
-        } else if (itemName.equals("reset")) { // Set it back to 1
-            newScaleValue = 1.0;
-            as.getAttribute(Attribute.SCALE).setBaseValue(newScaleValue);
         }
     }
 
     public void openMenu() {
         if (pe.getPlayer().hasPermission("asedit.togglesize")) {
             fillInventory();
-            debug.log("Player '" + pe.getPlayer().getName() + "' has opened the Sizing Attribute Menu");
+            Debug.log("Player '" + pe.getPlayer().getName() + "' has opened the Sizing Attribute Menu");
             pe.getPlayer().openInventory(menuInv);
         }
     }

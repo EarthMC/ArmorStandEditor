@@ -4,13 +4,9 @@ package io.github.rypofalem.armorstandeditor;
 import java.util.logging.Level;
 
 public class Debug {
-    private final ArmorStandEditorPlugin plugin;
+    private static final ArmorStandEditorPlugin plugin = ArmorStandEditorPlugin.instance();
 
-    public Debug(ArmorStandEditorPlugin plugin) {
-        this.plugin = plugin;
-    }
-
-    public void log(String msg) {
+    public static void log(String msg) {
         if (plugin.isDebug()) {
             plugin.getLogger().log(Level.INFO, "[ArmorStandEditor-Debug] {0}", msg);
         }

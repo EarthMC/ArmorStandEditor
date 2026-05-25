@@ -41,23 +41,20 @@ import org.bukkit.util.EulerAngle;
 
 public class PresetArmorPosesMenu {
 
-    Inventory menuInv;
-    private Debug debug;
+    private final Inventory menuInv;
     private final PlayerEditor pe;
     public ArmorStandEditorPlugin plugin;
-    private ArmorStand armorStand;
-    Component name;
+    private final ArmorStand armorStand;
 
-    Sound soundToUse = Sound.BLOCK_COMPARATOR_CLICK;
-    Location playerLocation;
-    Integer volumePitch = 1;
+    private final Sound soundToUse = Sound.BLOCK_COMPARATOR_CLICK;
+    private Location playerLocation;
+    private final int volumePitch = 1;
 
     public PresetArmorPosesMenu(PlayerEditor pe, ArmorStand as) {
         this.pe = pe;
         this.armorStand = as;
         this.plugin = pe.plugin;
-        this.debug = pe.plugin.debug;
-        name = plugin.getLang().getMessage("presettitle", "menutitle");
+        Component name = plugin.getLang().getMessage("presettitle", "menutitle");
         menuInv = Bukkit.createInventory(pe.getManager().getPresetHolder(), 36, name);
     }
 
@@ -122,7 +119,7 @@ public class PresetArmorPosesMenu {
     public void openMenu() {
         if (pe.getPlayer().hasPermission("asedit.basic")) {
             fillInventory();
-            debug.log("Player '" + pe.getPlayer().getName() + "' has opened the armorStand Preset Menu");
+            Debug.log("Player '" + pe.getPlayer().getName() + "' has opened the armorStand Preset Menu");
             pe.getPlayer().openInventory(menuInv);
         }
     }
@@ -133,7 +130,7 @@ public class PresetArmorPosesMenu {
 
         playerLocation = player.getLocation();
 
-        debug.log("Player '" + player.getName() + "' has chosen the Preset AS Pose '" + itemName + "'");
+        Debug.log("Player '" + player.getName() + "' has chosen the Preset AS Pose '" + itemName + "'");
 
         //Do the Preset
         switch (itemName) {

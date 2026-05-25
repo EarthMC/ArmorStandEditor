@@ -27,6 +27,7 @@ import io.github.rypofalem.armorstandeditor.Metrics.DrilldownPie;
 import io.github.rypofalem.armorstandeditor.Metrics.SimplePie;
 
 import io.papermc.lib.PaperLib;
+import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
@@ -41,25 +42,22 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 
 import java.io.File;
 import java.util.*;
 import java.util.logging.Level;
-
-import static net.kyori.adventure.text.format.NamedTextColor.RED;
 
 
 public class ArmorStandEditorPlugin extends JavaPlugin {
 
     //!!! DO NOT REMOVE THESE UNDER ANY CIRCUMSTANCES - Required for BStats and UpdateChecker !!!
     private static final int PLUGIN_ID = 12668;             //Used for BStats Metrics
-    public final Debug debug = new Debug(this);
 
     private NamespacedKey iconKey;
     private static ArmorStandEditorPlugin instance;
+    @Getter
     private Language lang;
+    @Getter
     private CoreProtectExtension coreProtectExtension;
 
     //Server Version Detection: Paper or Spigot and Invalid NMS Version
@@ -83,6 +81,7 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
     double updateCheckerInterval;
 
     //Edit Tool Information
+    @Getter
     Material editTool;
     String toolType;
     int editToolData = Integer.MIN_VALUE;
@@ -94,13 +93,17 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
     List<?> editToolLore = null;
     boolean enablePerWorld = false;
     List<?> allowedWorldList = null;
+    @Getter
     double maxScaleValue;
+    @Getter
     double minScaleValue;
+    @Getter
     double maxResetRange;
 
     //Custom Data Model Support - Readded
     boolean allowCustomModelData = false;
     // FIX: renamed from customModelDataInt and retyped to int — it was float but used as an integer throughout
+    @Getter
     int customModelDataValue;
 
     //GUI Settings
@@ -119,13 +122,6 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
     boolean allowedToRetrieveOwnPlayerHead = false;
     boolean adminOnlyNotifications = false;
 
-    //Glow Entity Colors
-    public Scoreboard scoreboard;
-    public Team team;
-    List<String> asTeams = new ArrayList<>();
-    String lockedTeam = "ASLocked";
-    String inUseTeam = "AS-InUse";
-
     //Blocked Names
     boolean enableBlockedNames = false;
     List<String> blockedNames = new ArrayList<>();
@@ -133,6 +129,7 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
     //Debugging Options.... Not Exposed globally
     boolean debugFlag;
 
+    @Getter
     private Scheduler scheduler;
 
     public ArmorStandEditorPlugin() {
@@ -142,9 +139,6 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         scheduler = new Scheduler(this);
-
-        if (!getHasFolia())
-            scoreboard = Objects.requireNonNull(this.getServer().getScoreboardManager()).getMainScoreboard();
 
         //START ---  Load Messages in Console
         getLogger().info("======= ArmorStandEditor =======");
@@ -166,15 +160,6 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
             return;
         } else {
             getLogger().log(Level.INFO, "Paper/Folia Present? {0}", hasPaper);
-        }
-
-        if (!hasFolia) {
-            scoreboard = Objects.requireNonNull(this.getServer().getScoreboardManager()).getMainScoreboard();
-            registerScoreboards(scoreboard);
-            if (!asTeams.contains(lockedTeam)) asTeams.add(lockedTeam);
-            if (!asTeams.contains(inUseTeam)) asTeams.add(inUseTeam);
-        } else {
-            runWarningsFolia();
         }
 
         //Run the update checker if enabled in config
@@ -245,42 +230,6 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
         }
     }
 
-    //Implement Glow Effects for Wolfstorm/ArmorStandEditor-Issues#5 - Add Disable Slots with Different Glow than Default
-    private void registerScoreboards(Scoreboard scoreboard) {
-        getLogger().info("Registering Scoreboards required for Glowing Effects");
-
-        if (scoreboard.getTeam(inUseTeam) == null) {
-            scoreboard.registerNewTeam(inUseTeam);
-        } else {
-            getLogger().info("Scoreboard for AS-InUse Already exists. Continuing to load");
-        }
-
-        if (scoreboard.getTeam(lockedTeam) == null) {
-            scoreboard.registerNewTeam(lockedTeam);
-            scoreboard.getTeam(lockedTeam).color(RED);
-        } else {
-            getLogger().info("Scoreboard for ASLocked Already exists. Continuing to load");
-        }
-    }
-
-    private void unregisterScoreboards(Scoreboard scoreboard) {
-        getLogger().info("Removing Scoreboards required for Glowing Effects when Disabling Slots...");
-
-        team = scoreboard.getTeam(lockedTeam);
-        if (team != null) {
-            team.unregister();
-        } else {
-            getLogger().severe("Team Already Appears to be removed. Please do not do this manually!");
-        }
-
-        team = scoreboard.getTeam(inUseTeam);
-        if (team != null) {
-            team.unregister();
-        } else {
-            getLogger().severe("Team Already Appears to be removed. Please do not do this manually!");
-        }
-    }
-
     private void updateConfig(String folder, String config) {
         if (!new File(getDataFolder() + File.separator + folder + config).exists()) {
             saveResource(folder + config, false);
@@ -293,11 +242,6 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
             if (PaperLib.getHolder(player.getOpenInventory().getTopInventory(), false).getHolder() == editorManager.getMenuHolder()) {
                 player.closeInventory(InventoryCloseEvent.Reason.DISCONNECT);
             }
-        }
-
-        if (!hasFolia) {
-            scoreboard = Objects.requireNonNull(this.getServer().getScoreboardManager()).getMainScoreboard();
-            unregisterScoreboards(scoreboard);
         }
     }
 
@@ -325,36 +269,18 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
         }
     }
 
-    public String getMinecraftVersion() {
-        return this.nmsVersion;
-    }
-
     // FIX: all getters now return cached fields instead of re-reading config on every call
     public boolean getArmorStandVisibility() { return armorStandVisibility; }
 
     public boolean getItemFrameVisibility() { return invisibleItemFrames; }
 
-    public Language getLang() { return lang; }
-
-    public double getMaxResetRange() { return maxResetRange; }
-
-    public Material getEditTool() { return this.editTool; }
-
     public boolean getRunTheUpdateChecker() { return runTheUpdateChecker; }
 
     public boolean getDefaultGravity() { return defaultGravity; }
 
-    // FIX: renamed from getallowedToRetrieveOwnPlayerHead (lowercase 'a' violated naming convention)
     public boolean getAllowedToRetrieveOwnPlayerHead() { return allowedToRetrieveOwnPlayerHead; }
 
     public boolean getAdminOnlyNotifications() { return adminOnlyNotifications; }
-
-    public double getMinScaleValue() { return minScaleValue; }
-
-    public double getMaxScaleValue() { return maxScaleValue; }
-
-    // FIX: renamed to match field rename from customModelDataInt -> customModelDataValue
-    public int getCustomModelDataValue() { return customModelDataValue; }
 
     public boolean isEditTool(ItemStack itemStk) {
         if (itemStk == null || editTool != itemStk.getType()) return false;
@@ -365,9 +291,7 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
         if (requireToolData && !hasMatchingDurability(itemMeta)) return false;
         if (requireToolName && !hasMatchingName(itemMeta)) return false;
         if (requireToolLore && !hasMatchingLore(itemMeta)) return false;
-        if (allowCustomModelData && !hasMatchingCustomModelData(itemMeta)) return false;
-
-        return true;
+        return !allowCustomModelData || hasMatchingCustomModelData(itemMeta);
     }
 
     private boolean hasMatchingDurability(ItemMeta itemMeta) {
@@ -384,14 +308,15 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
     private boolean hasMatchingLore(ItemMeta itemMeta) {
         if (editToolLore == null) return true;
         List<Component> itemLore = itemMeta.lore();
-        return itemLore != null && itemLore.equals((List<Component>) editToolLore);
+        return itemLore != null && itemLore.equals(editToolLore);
     }
 
+    @SuppressWarnings("UnstableApiUsage")
     private boolean hasMatchingCustomModelData(ItemMeta itemMeta) {
         if (customModelDataValue == 0) return true;
         CustomModelDataComponent component = itemMeta.getCustomModelDataComponent();
         if (component.getFloats().isEmpty()) return true;
-        // FIX: was comparing float to float with ==; now both sides are cast to int for reliable equality
+
         return component.getFloats().getFirst().intValue() == customModelDataValue;
     }
 
@@ -411,7 +336,7 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
         runTheUpdateChecker = getConfig().getBoolean("runTheUpdateChecker", true);
         opUpdateNotification = getConfig().getBoolean("opUpdateNotification", true);
         updateCheckerInterval = getConfig().getDouble("updateCheckerInterval", 24);
-        allowedToRetrieveOwnPlayerHead = getConfig().getBoolean("allowedToRetrieveOwnPlayerHead", true);
+        allowedToRetrieveOwnPlayerHead = getConfig().getBoolean("allowedToRetrieveOwnPlayerHead", false);
         adminOnlyNotifications = getConfig().getBoolean("adminOnlyNotifications", true);
         armorStandVisibility = getConfig().getBoolean("armorStandVisibility", true);
         requireToolData = getConfig().getBoolean("requireToolData", false);
@@ -455,7 +380,8 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
             editToolLore = getConfig().getList("toolLore", null);
         }
 
-        if (enablePerWorld = getConfig().getBoolean("enablePerWorldSupport", false)) {
+        enablePerWorld = getConfig().getBoolean("enablePerWorldSupport", false);
+        if (enablePerWorld) {
             allowedWorldList = getConfig().getList("allowed-worlds", null);
             if (allowedWorldList != null && !allowedWorldList.isEmpty() && allowedWorldList.getFirst().equals("*")) {
                 allowedWorldList = getServer().getWorlds().stream().map(World::getName).toList();
@@ -473,22 +399,11 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
 
         debugFlag = getConfig().getBoolean("debugFlag", false);
         if (debugFlag) {
-            getServer().getLogger().log(Level.INFO, "[ArmorStandEditor-Debug] Debug Mode ENABLED! Use for testing only.");
+            getLogger().log(Level.INFO, "[ArmorStandEditor-Debug] Debug Mode ENABLED! Use for testing only.");
         }
     }
 
     public void performReload() {
-        // FIX: was fetching scoreboard twice and adding teams without duplicate checks
-        if (!hasFolia) {
-            scoreboard = Objects.requireNonNull(this.getServer().getScoreboardManager()).getMainScoreboard();
-            unregisterScoreboards(scoreboard);
-            registerScoreboards(scoreboard);
-            if (!asTeams.contains(lockedTeam)) asTeams.add(lockedTeam);
-            if (!asTeams.contains(inUseTeam)) asTeams.add(inUseTeam);
-        } else {
-            runWarningsFolia();
-        }
-
         reloadConfig();
         loadConfigValues();
     }
@@ -548,10 +463,6 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
         metrics.addCustomChart(new SimplePie("allowCustomModelData", () -> String.valueOf(getConfig().getBoolean("allowCustomModelData"))));
     }
 
-    private void runWarningsFolia() {
-        getLogger().warning("Scoreboards currently do not work on Folia. Scoreboard Coloring will not work");
-    }
-
     public NamespacedKey getIconKey() {
         if (iconKey == null) iconKey = new NamespacedKey(this, "command_icon");
         return iconKey;
@@ -564,13 +475,4 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
     public String getASEVersion() {
         return ASE_VERSION;
     }
-
-    public Scheduler getScheduler() {
-        return scheduler;
-    }
-
-    public CoreProtectExtension getCoreProtectExtension() {
-        return coreProtectExtension;
-    }
-
 }

@@ -3,17 +3,17 @@ package io.github.rypofalem.armorstandeditor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class TabCompleter implements org.bukkit.command.TabCompleter {
-
-    private ArmorStandEditorPlugin plugin = ArmorStandEditorPlugin.instance();
+    private final ArmorStandEditorPlugin plugin = ArmorStandEditorPlugin.instance();
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull[] args) {
         if (!(sender instanceof Player player)) return Collections.emptyList();
         if (!isCommandValid(command.getName())) return Collections.emptyList();
 
@@ -27,7 +27,7 @@ public class TabCompleter implements org.bukkit.command.TabCompleter {
             if (getPermissionReload(player))              argList.add("reload");
             if (getPermissionStats(player))               argList.add("stats");
             if (getPermissionResetWithinRange(player))    argList.add("resetwithinrange");
-            if (getPermissionPlayerHead(player) || plugin.getAllowedToRetrieveOwnPlayerHead())
+            if (getPermissionPlayerHead(player) && plugin.getAllowedToRetrieveOwnPlayerHead())
                 argList.add("playerhead");
         }
 

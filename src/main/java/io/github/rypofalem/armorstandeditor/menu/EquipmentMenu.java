@@ -43,7 +43,6 @@ import org.jetbrains.annotations.Nullable;
 
 public class EquipmentMenu {
     Inventory menuInv;
-    private final Debug debug;
     private final PlayerEditor pe;
     private final ArmorStand armorstand;
     ItemStack helmet;
@@ -63,7 +62,6 @@ public class EquipmentMenu {
     public EquipmentMenu(PlayerEditor pe, ArmorStand as) {
         this.pe = pe;
         this.armorstand = as;
-        this.debug = pe.plugin.debug;
 
         //noinspection ConstantConditions
         coreProtectExtension = pe.plugin.getCoreProtectExtension();
@@ -142,7 +140,7 @@ public class EquipmentMenu {
         pe.getPlayer().closeInventory();
         if (pe.getPlayer().hasPermission("asedit.equipment")) {
             fillInventory();
-            debug.log("Player '" + pe.getPlayer().getName() + "' has opened the Equipment Menu.");
+            Debug.log("Player '" + pe.getPlayer().getName() + "' has opened the Equipment Menu.");
             pe.getPlayer().openInventory(menuInv);
         }
     }
@@ -168,39 +166,39 @@ public class EquipmentMenu {
 
     @SuppressWarnings("java:S2209")
     private void checkForChanges() {
-        debug.log("Equipping ArmorStand and checking changes.");
+        Debug.log("Equipping ArmorStand and checking changes.");
         Player player = pe.getPlayer();
         ItemStack[] oldArray = new ItemStack[]{oldHelmet, oldChest, oldPants, oldBoots, oldRightHand, oldLeftHand};
         ItemStack[] newArray = new ItemStack[]{helmet, chest, pants, boots, rightHand, leftHand};
 
         boolean change = false;
         if (hasChanged(oldHelmet, helmet)) {
-            debug.log("Helmet changed from " + oldHelmet + " to " + helmet);
+            Debug.log("Helmet changed from " + oldHelmet + " to " + helmet);
             oldHelmet = helmet;
             change = true;
         }
         if (hasChanged(oldChest, chest)) {
-            debug.log("Chest changed from " + oldChest + " to " + chest);
+            Debug.log("Chest changed from " + oldChest + " to " + chest);
             oldChest = chest;
             change = true;
         }
         if (hasChanged(oldPants, pants)) {
-            debug.log("Pants changed from " + oldPants + " to " + pants);
+            Debug.log("Pants changed from " + oldPants + " to " + pants);
             oldPants = pants;
             change = true;
         }
         if (hasChanged(oldBoots, boots)) {
-            debug.log("Boots changed from " + oldBoots + " to " + boots);
+            Debug.log("Boots changed from " + oldBoots + " to " + boots);
             oldBoots = boots;
             change = true;
         }
         if (hasChanged(oldRightHand, rightHand)) {
-            debug.log("R-Hand changed from " + oldRightHand + " to " + rightHand);
+            Debug.log("R-Hand changed from " + oldRightHand + " to " + rightHand);
             oldRightHand = rightHand;
             change = true;
         }
         if (hasChanged(oldLeftHand, leftHand)) {
-            debug.log("L-Hand changed from " + oldLeftHand + " to " + leftHand);
+            Debug.log("L-Hand changed from " + oldLeftHand + " to " + leftHand);
             oldLeftHand = leftHand;
             change = true;
         }

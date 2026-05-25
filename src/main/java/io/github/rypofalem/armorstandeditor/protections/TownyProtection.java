@@ -19,31 +19,24 @@
 package io.github.rypofalem.armorstandeditor.protections;
 
 import io.github.rypofalem.armorstandeditor.ArmorStandEditorPlugin;
-import io.github.rypofalem.armorstandeditor.Debug;
 
 import com.palmergames.bukkit.towny.event.executors.TownyActionEventExecutor;
-import com.palmergames.bukkit.towny.TownyAPI; 
+import com.palmergames.bukkit.towny.TownyAPI;
 
-import io.github.rypofalem.armorstandeditor.ArmorStandEditorPlugin;
 import io.github.rypofalem.armorstandeditor.Debug;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
-
+import org.bukkit.entity.*;
 
 //FIX for https://github.com/Wolfieheart/ArmorStandEditor-Issues/issues/15
 public class TownyProtection implements Protection {
     private final boolean tEnabled;
-    private Debug debug;
-    private ArmorStandEditorPlugin plugin;
+    private final ArmorStandEditorPlugin plugin;
 
 
     public TownyProtection() {
         plugin = ArmorStandEditorPlugin.instance();
-        debug = plugin.debug;
         tEnabled = Bukkit.getPluginManager().isPluginEnabled("Towny");
     }
 
@@ -56,25 +49,27 @@ public class TownyProtection implements Protection {
         TownyAPI towny = TownyAPI.getInstance();
         Location playerLoc = player.getLocation();
 
-        // --- Get ArmorStand on the Block --
-        if (!(entity instanceof ArmorStand entityOnBlock)) {
-            debug.log("No ArmorStand has been found therefore we will continue as intended");
-            return true;
-        }
+        Material material;
+        if (entity instanceof ArmorStand) {
+            material = Material.ARMOR_STAND;
+            Debug.log("Editing ArmorStand: " + entity.getUniqueId());
+        } else if (entity instanceof ItemFrame) {
+            material = entity instanceof GlowItemFrame ? Material.GLOW_ITEM_FRAME : Material.ITEM_FRAME;
+            Debug.log("Editing ItemFrame: " + entity.getUniqueId());
+        } else return true;
 
-        debug.log("Editing ArmorStand: " + entityOnBlock.getUniqueId());
 
         // --- wilderness checks ---
         if (towny.isWilderness(playerLoc)) {
             if (player.hasPermission("asedit.townyProtection.canEditInWild")) {
-                debug.log("User '" + player.getDisplayName() + "' is in the Wilderness and has the permission asedit.townyProtection.canEditInWild set to TRUE. Edits are allowed!");
+                Debug.log("User '" + player.getName() + "' is in the Wilderness and has the permission asedit.townyProtection.canEditInWild set to TRUE. Edits are allowed!");
                 return true;
             } else {
                 player.sendMessage(plugin.getLang().getMessage("townyNoWildEdit", "warn"));
                 return false;
             }
         }
-        return TownyActionEventExecutor.canBuild(player, entityOnBlock.getLocation(), Material.ARMOR_STAND);
+        return TownyActionEventExecutor.canBuild(player, entity.getLocation(), material);
     }
 }
 
