@@ -32,7 +32,6 @@ import io.github.rypofalem.armorstandeditor.utils.MinecraftVersion;
 import io.github.rypofalem.armorstandeditor.utils.Util;
 import io.github.rypofalem.armorstandeditor.utils.VersionUtil;
 
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 
 import org.bukkit.GameMode;
@@ -47,7 +46,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scoreboard.Team;
 import org.bukkit.util.EulerAngle;
 
 import java.util.ArrayList;
@@ -55,39 +53,34 @@ import java.util.UUID;
 
 public class PlayerEditor {
     public ArmorStandEditorPlugin plugin;
-    private Scheduler scheduler;
+    private final Scheduler scheduler;
 
-    private Debug debug;
-    Team team;
-    private UUID uuid;
+    private final UUID uuid;
     UUID armorStandInUseId;
-    UUID armorStandID;
-    EditMode eMode;
-    AdjustmentMode adjMode;
-    CopySlots copySlots;
-    Axis axis;
+    private EditMode eMode;
+    private AdjustmentMode adjMode;
+    private final CopySlots copySlots;
+    private Axis axis;
     double eulerAngleChange;
     double degreeAngleChange;
     double movChange;
-    Menu chestMenu;
-    ArmorStand target;
-    ArrayList<ArmorStand> targetList = null;
-    ArrayList<ArmorStand> armorStandInRange = null;
+    private final Menu chestMenu;
+    private ArmorStand target;
+    private ArrayList<ArmorStand> targetList = null;
 
     //NEW: ItemFrame Stuff
-    ItemFrame frameTarget;
-    ArrayList<ItemFrame> frameTargetList = null;
+    private ItemFrame frameTarget;
+    private ArrayList<ItemFrame> frameTargetList = null;
     int targetIndex = 0;
     int frameTargetIndex = 0;
     EquipmentMenu equipMenu;
     PresetArmorPosesMenu presetPoseMenu;
     SizeMenu sizeModificationMenu;
-    long lastCancelled = 0;
+    private long lastCancelled = 0;
 
     public PlayerEditor(UUID uuid, ArmorStandEditorPlugin plugin) {
         this.uuid = uuid;
         this.plugin = plugin;
-        this.debug = plugin.debug;
         this.scheduler = plugin.getScheduler();
 
         eMode = EditMode.NONE;
@@ -102,13 +95,13 @@ public class PlayerEditor {
 
     public void setMode(EditMode editMode) {
         this.eMode = editMode;
-        debug.log("EditMode is: " + editMode.toString().toLowerCase());
+        Debug.log("EditMode is: " + editMode.toString().toLowerCase());
         sendMessage("setmode", editMode.toString().toLowerCase());
     }
 
     public void setAxis(Axis axis) {
         this.axis = axis;
-        debug.log("Axis is: " + axis.toString().toLowerCase());
+        Debug.log("Axis is: " + axis.toString().toLowerCase());
         sendMessage("setaxis", axis.toString().toLowerCase());
     }
 
@@ -122,13 +115,13 @@ public class PlayerEditor {
             movChange = getManager().fineMov;
         }
         degreeAngleChange = eulerAngleChange / Math.PI * 180;
-        debug.log("AdjMode is: " + adjMode.toString().toLowerCase());
+        Debug.log("AdjMode is: " + adjMode.toString().toLowerCase());
         sendMessage("setadj", adjMode.toString().toLowerCase());
     }
 
     public void setCopySlot(byte slot) {
         copySlots.changeSlots(slot);
-        debug.log("Copy Slot set to: " + (slot + 1));
+        Debug.log("Copy Slot set to: " + (slot + 1));
         sendMessage("setslot", String.valueOf((slot + 1)));
     }
 
@@ -206,11 +199,12 @@ public class PlayerEditor {
                     break;
 
             }
-        } else return;
+        }
     }
 
     public void editItemFrame(ItemFrame itemFrame) {
-        if (getPlayer().hasPermission("asedit.toggleitemframevisibility") || plugin.invisibleItemFrames) {
+        if (getPlayer().hasPermission("asedit.toggleitemframevisibility") && plugin.invisibleItemFrames) {
+            itemFrame = attemptTarget(itemFrame);
             switch (eMode) {
                 case ITEMFRAME:
                     toggleItemFrameVisible(itemFrame);
@@ -223,45 +217,31 @@ public class PlayerEditor {
                     sendMessage("nomodeif", null);
                     break;
             }
-        } else return;
+        }
     }
 
     private void openEquipment(ArmorStand armorStand) {
         if (!getPlayer().hasPermission("asedit.equipment")) return;
 
         armorStandInUseId = armorStand.getUniqueId();
-        // Dont allow Editing the ArmorStand if the Stand is on the AS-InUse Team
-        // Means No 2 Players can edit the Equipment at the same time
-        if (!plugin.hasFolia) {
-            team = plugin.scoreboard.getTeam(plugin.inUseTeam);
-
-            debug.log("Is ArmorStand currently in use by another player?: " + team.hasEntry(armorStandInUseId.toString()));
-
-            if (!team.hasEntry(armorStandInUseId.toString())) {
-                debug.log("ArmorStand Not on a Team and Player '" + getPlayer().displayName() + "' has triggered to Open the Equipment Menu, Adding to In Use Team");
-                team.addEntry(armorStandInUseId.toString());
-                getPlayer().closeInventory();
-                equipMenu = new EquipmentMenu(this, armorStand);
-                equipMenu.openMenu();
-            } else {
-                sendMessage("asinuse", "warn");
-            }
-        } else {
-            if (!PlayerEditorManager.foliaInUse.contains(armorStandInUseId)) {
-                debug.log("ArmorStand Not locked and Player '" + getPlayer().displayName() + "' has triggered to Open the Equipment Menu. Folia.");
-                getPlayer().closeInventory();
-                PlayerEditorManager.foliaInUse.add(armorStandInUseId);
-                equipMenu = new EquipmentMenu(this, armorStand);
-                equipMenu.openMenu();
-            } else {
-                sendMessage("asinuse", "warn");
-            }
+        if (SharedUtil.isInUse(armorStandInUseId)) {
+            sendMessage("asinuse", "warn");
+            return;
         }
+        if (SharedUtil.isLocked(armorStand)) {
+            sendMessage("target", null); // Armorstand locked
+            return;
+        }
+        Debug.log("ArmorStand Not locked and Player '" + getPlayer().displayName() + "' has triggered to Open the Equipment Menu.");
+
+        getPlayer().closeInventory();
+        equipMenu = new EquipmentMenu(this, armorStand);
+        equipMenu.openMenu();
     }
 
     private void choosePreset(ArmorStand armorStand) {
         if (!getPlayer().hasPermission("asedit.basic")) return;
-        debug.log("Player '" + getPlayer().displayName() + "' has triggered the Preset Poses Menu");
+        Debug.log("Player '" + getPlayer().displayName() + "' has triggered the Preset Poses Menu");
         getPlayer().closeInventory();
         presetPoseMenu = new PresetArmorPosesMenu(this, armorStand);
         presetPoseMenu.openMenu();
@@ -274,14 +254,13 @@ public class PlayerEditor {
         } else {
             if (VersionUtil.fromString(plugin.getNmsVersion()).isNewerThanOrEquals(MinecraftVersion.MINECRAFT_1_20_4)) {
                 //NOTE: New Sizing Menu ONLY WORKS IN 1.21.3 and HIGHER
-                debug.log("Player '" + getPlayer().displayName() + "' has triggered the AS Attribute Size Menu");
+                Debug.log("Player '" + getPlayer().displayName() + "' has triggered the AS Attribute Size Menu");
                 getPlayer().closeInventory();
                 sizeModificationMenu = new SizeMenu(this, armorStand);
                 sizeModificationMenu.openMenu();
             } else {
                 armorStand.setSmall(!armorStand.isSmall());
             }
-
         }
     }
 
@@ -334,7 +313,7 @@ public class PlayerEditor {
                 loc.add(0, 0, movChange);
                 break;
         }
-        debug.log("Armorstand will be teleported to: " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ() + ", near player " + getPlayer().displayName());
+        Debug.log("Armorstand will be teleported to: " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ() + ", near player " + getPlayer().displayName());
         scheduler.teleport(armorStand, loc);
     }
 
@@ -352,7 +331,7 @@ public class PlayerEditor {
                 loc.subtract(0, 0, movChange);
                 break;
         }
-        debug.log("Armorstand will be teleported to: " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ() + ", near player " + getPlayer().displayName());
+        Debug.log("Armorstand will be teleported to: " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ() + ", near player " + getPlayer().displayName());
         scheduler.teleport(armorStand, loc);
     }
 
@@ -361,7 +340,7 @@ public class PlayerEditor {
         Location loc = armorStand.getLocation();
         float yaw = loc.getYaw();
         loc.setYaw((yaw + 180 + (float) degreeAngleChange) % 360 - 180);
-        debug.log("Armorstand will be teleported to: " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ() + ", near player " + getPlayer().displayName());
+        Debug.log("Armorstand will be teleported to: " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ() + ", near player " + getPlayer().displayName());
         scheduler.teleport(armorStand, loc);
     }
 
@@ -370,14 +349,14 @@ public class PlayerEditor {
         Location loc = armorStand.getLocation();
         float yaw = loc.getYaw();
         loc.setYaw((yaw + 180 - (float) degreeAngleChange) % 360 - 180);
-        debug.log("Armorstand will be teleported to: " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ() + ", near player " + getPlayer().displayName());
+        Debug.log("Armorstand will be teleported to: " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ() + ", near player " + getPlayer().displayName());
         scheduler.teleport(armorStand, loc);
     }
 
     private void copy(ArmorStand armorStand) {
         if (getPlayer().hasPermission("asedit.copy")) {
             copySlots.copyDataToSlot(armorStand);
-            debug.log("ArmorStand Items, Stats and Attributes has been copied to " + (copySlots.currentSlot + 1) + ", near player " + getPlayer().displayName());
+            Debug.log("ArmorStand Items, Stats and Attributes has been copied to " + (copySlots.currentSlot + 1) + ", near player " + getPlayer().displayName());
             sendMessage("copied", "" + (copySlots.currentSlot + 1));
             setMode(EditMode.PASTE);
         } else {
@@ -389,7 +368,7 @@ public class PlayerEditor {
     private void paste(ArmorStand armorStand) {
         if (getPlayer().hasPermission("asedit.paste")) {
             ArmorStandData data = copySlots.getDataToPaste();
-            debug.log("Pasting ArmorStand Attributes and Settings from: " + (copySlots.currentSlot + 1) + ", near player " + getPlayer().displayName());
+            Debug.log("Pasting ArmorStand Attributes and Settings from: " + (copySlots.currentSlot + 1) + ", near player " + getPlayer().displayName());
             if (data == null) return;
             armorStand.setHeadPose(data.headPos);
             armorStand.setBodyPose(data.bodyPos);
@@ -427,7 +406,7 @@ public class PlayerEditor {
 
     private void resetPosition(ArmorStand armorStand) {
         if (getPlayer().hasPermission("asedit.reset")) {
-            debug.log("Resetting ArmorStand near the Player " + getPlayer().displayName());
+            Debug.log("Resetting ArmorStand near the Player " + getPlayer().displayName());
             armorStand.setHeadPose(new EulerAngle(0, 0, 0));
             armorStand.setBodyPose(new EulerAngle(0, 0, 0));
             armorStand.setLeftArmPose(new EulerAngle(0, 0, 0));
@@ -443,46 +422,37 @@ public class PlayerEditor {
         if (!getPlayer().hasPermission("asedit.disableSlots")) {
             sendMessage("nopermoption", "warn", "disableslots");
         } else {
-            debug.log("Remove DisabledSlots on ArmorStand near the Player " + getPlayer().displayName());
+            Debug.log("Remove DisabledSlots on ArmorStand near the Player " + getPlayer().displayName());
             if (armorStand.hasEquipmentLock(EquipmentSlot.HAND, ArmorStand.LockType.REMOVING_OR_CHANGING)) { //Adds a lock to every slot or removes it
-                team = plugin.getHasFolia() ? null : plugin.scoreboard.getTeam(plugin.lockedTeam);
-                armorStandID = armorStand.getUniqueId();
+                armorStandInUseId = armorStand.getUniqueId();
 
                 for (final EquipmentSlot slot : EquipmentSlot.values()) { // UNLOCKED
                     armorStand.removeEquipmentLock(slot, ArmorStand.LockType.REMOVING_OR_CHANGING);
                     armorStand.removeEquipmentLock(slot, ArmorStand.LockType.ADDING);
                 }
+
+                SharedUtil.setLocked(armorStand, false);
                 getPlayer().playSound(getPlayer().getLocation(), Sound.ENTITY_ITEM_BREAK, SoundCategory.PLAYERS, 1.0f, 1.0f);
-
-                if (team != null) {
-                    team.removeEntry(armorStandID.toString());
-                    armorStand.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 50, 1, false, false)); //300 Ticks = 15 seconds
-                }
-
-
+                armorStand.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 50, 1, false, false)); //300 Ticks = 15 seconds
             } else {
-                debug.log("Adding DisabledSlots on ArmorStand near the Player " + getPlayer().displayName());
+                Debug.log("Adding DisabledSlots on ArmorStand near the Player " + getPlayer().displayName());
                 for (final EquipmentSlot slot : EquipmentSlot.values()) { //LOCKED
                     armorStand.addEquipmentLock(slot, ArmorStand.LockType.REMOVING_OR_CHANGING);
                     armorStand.addEquipmentLock(slot, ArmorStand.LockType.ADDING);
                 }
 
+                SharedUtil.setLocked(armorStand, true);
                 getPlayer().playSound(getPlayer().getLocation(), Sound.ITEM_ARMOR_EQUIP_WOLF, SoundCategory.PLAYERS, 1.0f, 1.0f);
-
-                if (team != null) {
-                    team.addEntry(armorStandID.toString());
-                    armorStand.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 50, 1, false, false)); //300 Ticks = 15 seconds
-                }
+                armorStand.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 50, 1, false, false)); //300 Ticks = 15 seconds
             }
 
             sendMessage("disabledslots", null);
         }
-
     }
 
     private void toggleInvulnerability(ArmorStand armorStand) { //See NewFeature-Request #256 for more info
         if (getPlayer().hasPermission("asedit.toggleInvulnerability")) {
-            debug.log("Making an ArmorStand vulnerable/invulnerable (set armorStand.isInvulnerable() = '" + !armorStand.isInvulnerable() + "') near player: " + getPlayer().displayName());
+            Debug.log("Making an ArmorStand vulnerable/invulnerable (set armorStand.isInvulnerable() = '" + !armorStand.isInvulnerable() + "') near player: " + getPlayer().displayName());
             armorStand.setInvulnerable(!armorStand.isInvulnerable());
             sendMessage("toggleinvulnerability", String.valueOf(armorStand.isInvulnerable()));
         } else {
@@ -493,7 +463,7 @@ public class PlayerEditor {
 
     private void toggleGravity(ArmorStand armorStand) {
         if (getPlayer().hasPermission("asedit.togglegravity")) {
-            debug.log("Toggling the Gravity of an ArmorStand near player: " + getPlayer().displayName());
+            Debug.log("Toggling the Gravity of an ArmorStand near player: " + getPlayer().displayName());
             armorStand.setGravity(!armorStand.hasGravity());
             sendMessage("setgravity", String.valueOf(armorStand.hasGravity()));//Fix for Wolfst0rm/ArmorStandEditor-Issues#6: Translation of On/Off Keys are broken
         } else {
@@ -501,19 +471,18 @@ public class PlayerEditor {
         }
     }
 
-    void togglePlate(ArmorStand armorStand) {
+    private void togglePlate(ArmorStand armorStand) {
         if (getPlayer().hasPermission("asedit.togglebaseplate")) {
-            debug.log("Toggling the Baseplate of an ArmorStand near player: " + getPlayer().displayName());
+            Debug.log("Toggling the Baseplate of an ArmorStand near player: " + getPlayer().displayName());
             armorStand.setBasePlate(!armorStand.hasBasePlate());
         } else {
             sendMessage("nopermoption", "warn", "baseplate");
         }
-
     }
 
-    void toggleGlowing(ArmorStand armorStand) {
+    private void toggleGlowing(ArmorStand armorStand) {
         if (getPlayer().hasPermission("asedit.togglearmorstandglow")) {
-            debug.log("Toggling the Glowing Ability of an ArmorStand near player: " + getPlayer().displayName());
+            Debug.log("Toggling the Glowing Ability of an ArmorStand near player: " + getPlayer().displayName());
             //Will only make it glow white - Not something we can do like with Locking. Do not request this!
             armorStand.setGlowing(!armorStand.isGlowing());
         } else {
@@ -521,27 +490,27 @@ public class PlayerEditor {
         }
     }
 
-    void toggleArms(ArmorStand armorStand) {
+    private void toggleArms(ArmorStand armorStand) {
         if (getPlayer().hasPermission("asedit.togglearms")) {
-            debug.log("Toggling the Showing of Arms of an ArmorStand near player: " + getPlayer().displayName());
+            Debug.log("Toggling the Showing of Arms of an ArmorStand near player: " + getPlayer().displayName());
             armorStand.setArms(!armorStand.hasArms());
         } else {
             sendMessage("nopermoption", "warn", "showarms");
         }
     }
 
-    void toggleVisible(ArmorStand armorStand) {
-        if (getPlayer().hasPermission("asedit.togglearmorstandvisibility") || plugin.getArmorStandVisibility()) {
-            debug.log("Toggling the Visiblity of an ArmorStand near player: " + getPlayer().displayName());
+    private void toggleVisible(ArmorStand armorStand) {
+        if (getPlayer().hasPermission("asedit.togglearmorstandvisibility") && plugin.getArmorStandVisibility()) {
+            Debug.log("Toggling the Visiblity of an ArmorStand near player: " + getPlayer().displayName());
             armorStand.setVisible(!armorStand.isVisible());
         } else { //Throw No Permission Message
             sendMessage("nopermoption", "warn", "armorstandvisibility");
         }
     }
 
-    void toggleItemFrameVisible(ItemFrame itemFrame) {
-        if (getPlayer().hasPermission("asedit.toggleitemframevisibility") || plugin.invisibleItemFrames) { //Option to use perms or Config
-            debug.log("Toggling the Visibility of an ItemFrame near player: " + getPlayer().displayName());
+    private void toggleItemFrameVisible(ItemFrame itemFrame) {
+        if (getPlayer().hasPermission("asedit.toggleitemframevisibility") && plugin.invisibleItemFrames) { //Option to use perms or Config
+            Debug.log("Toggling the Visibility of an ItemFrame near player: " + getPlayer().displayName());
             itemFrame.setVisible(!itemFrame.isVisible());
         } else {
             sendMessage("nopermoption", "warn", "itemframevisibility");
@@ -554,7 +523,7 @@ public class PlayerEditor {
             return;
         }
 
-        debug.log("Resetting ArmorStands within range of " + range + " near player: " + getPlayer().displayName());
+        Debug.log("Resetting ArmorStands within range of " + range + " near player: " + getPlayer().displayName());
         int resetCount = 0;
 
         for (Entity entity : playerLocation.getWorld().getNearbyEntities(playerLocation, range, range, range)) {
@@ -585,9 +554,8 @@ public class PlayerEditor {
             }
         }
 
-        debug.log("Reset " + resetCount + " armor stands within range");
+        Debug.log("Reset " + resetCount + " armor stands within range");
     }
-
 
     void cycleAxis(int i) {
         int index = axis.ordinal();
@@ -633,7 +601,6 @@ public class PlayerEditor {
         return angle;
     }
 
-
     public void setTarget(ArrayList<ArmorStand> armorStands) {
         if (armorStands == null || armorStands.isEmpty()) {
             target = null;
@@ -646,9 +613,10 @@ public class PlayerEditor {
                 sendMessage("target", null);
             } else {
                 boolean same = targetList.size() == armorStands.size();
-                if (same) for (ArmorStand as : armorStands) {
-                    same = targetList.contains(as);
-                    if (!same) break;
+                if (same)
+                    for (ArmorStand as : armorStands) {
+                        same = targetList.contains(as);
+                        if (!same) break;
                 }
 
                 if (same) {
@@ -667,23 +635,23 @@ public class PlayerEditor {
         }
     }
 
-
     public void setFrameTarget(ArrayList<ItemFrame> itemFrames) {
         if (itemFrames == null || itemFrames.isEmpty()) {
             frameTarget = null;
             frameTargetList = null;
             sendMessage("notarget", "itemframe");
         } else {
-
             if (frameTargetList == null) {
                 frameTargetList = itemFrames;
                 frameTargetIndex = 0;
                 sendMessage("frametarget", null);
             } else {
                 boolean same = frameTargetList.size() == itemFrames.size();
-                if (same) for (final ItemFrame itemf : itemFrames) {
-                    same = frameTargetList.contains(itemf);
-                    if (!same) break;
+                if (same) {
+                    for (final ItemFrame frame : itemFrames) {
+                        same = frameTargetList.contains(frame);
+                        if (!same) break;
+                    }
                 }
 
                 if (same) {
@@ -699,8 +667,7 @@ public class PlayerEditor {
         }
     }
 
-
-    ArmorStand attemptTarget(ArmorStand armorStand) {
+    private ArmorStand attemptTarget(ArmorStand armorStand) {
         if (target == null
             || !target.isValid()
             || target.getWorld() != getPlayer().getWorld()
@@ -710,15 +677,26 @@ public class PlayerEditor {
         return armorStand;
     }
 
+    private ItemFrame attemptTarget(ItemFrame itemFrame) {
+        if (frameTarget == null
+                || !frameTarget.isValid()
+                || frameTarget.getWorld() != getPlayer().getWorld()
+                || frameTarget.getLocation().distanceSquared(getPlayer().getLocation()) > 100)
+            return itemFrame;
+        itemFrame = frameTarget;
+        return itemFrame;
+    }
+
     void sendMessage(String path, String format, String option) {
         Component message = plugin.getLang().getMessage(path, format, option);
         Player player = plugin.getServer().getPlayer(getUUID());
+        if (player == null) return;
         if (plugin.sendToActionBar) {
-            if (ArmorStandEditorPlugin.instance().getHasPaper() || ArmorStandEditorPlugin.instance().getHasFolia()) { //Paper and Spigot having the same Interaction for sendToActionBar
-                Audience.audience(player).sendActionBar(message);
+            if (plugin.getHasPaper() || plugin.getHasFolia()) { //Paper and Spigot having the same Interaction for sendToActionBar
+                player.sendActionBar(message);
             }
         } else {
-            Audience.audience(player).sendMessage(message);
+            player.sendMessage(message);
         }
     }
 
@@ -737,10 +715,6 @@ public class PlayerEditor {
 
     public Player getPlayer() {
         return plugin.getServer().getPlayer(getUUID());
-    }
-
-    public Scheduler getScheduler() {
-        return scheduler;
     }
 
     public UUID getUUID() {
@@ -769,5 +743,4 @@ public class PlayerEditor {
             chestMenu.openMenu();
         }
     }
-
 }

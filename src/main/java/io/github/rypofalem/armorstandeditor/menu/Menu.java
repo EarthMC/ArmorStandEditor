@@ -38,19 +38,16 @@ import org.bukkit.potion.PotionType;
 public class Menu {
     private final Inventory menuInv;
     private final PlayerEditor pe;
-    Component name;
-    private Debug debug;
 
     public Menu(PlayerEditor pe) {
         this.pe = pe;
-        this.debug = pe.plugin.debug;
-        name = pe.plugin.getLang().getMessage("mainmenutitle", "menutitle");
+        Component name = pe.plugin.getLang().getMessage("mainmenutitle", "menutitle");
         menuInv = Bukkit.createInventory(pe.getManager().getMenuHolder(), 54, name);
         fillInventory();
     }
 
+    @SuppressWarnings("UnstableApiUsage")
     private void fillInventory() {
-
         menuInv.clear();
 
         ItemStack xAxis;
@@ -235,7 +232,7 @@ public class Menu {
                 "paste", "mode paste");
         }
 
-        if (pe.getPlayer().hasPermission("asedit.head") || pe.plugin.getAllowedToRetrieveOwnPlayerHead()) {
+        if (pe.getPlayer().hasPermission("asedit.head") && pe.plugin.getAllowedToRetrieveOwnPlayerHead()) {
             playerHead = createIcon(ItemStack.of(Material.PLAYER_HEAD),
                 "playerheadmenu",
                 "playerhead");
@@ -270,6 +267,7 @@ public class Menu {
         return createIcon(icon, path, command, null);
     }
 
+    @SuppressWarnings("UnstableApiUsage")
     private ItemStack createIcon(ItemStack icon, String path, String command, String option) {
 
         if (!command.isEmpty()) {
@@ -302,7 +300,7 @@ public class Menu {
     public void openMenu() {
         if (pe.getPlayer().hasPermission("asedit.basic")) {
             fillInventory();
-            debug.log("Player '" + pe.getPlayer().getName() + "' has opened the Main ASE Menu");
+            Debug.log("Player '" + pe.getPlayer().getName() + "' has opened the Main ASE Menu");
             pe.getPlayer().openInventory(menuInv);
         }
     }

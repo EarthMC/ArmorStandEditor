@@ -80,40 +80,11 @@ dependencies {
     // WorldGuard
     compileOnly "com.sk89q.worldguard:worldguard-bukkit:7.1.0-SNAPSHOT"
 
-    // PlotSquared
-    compileOnly("com.intellectualsites.plotsquared:plotsquared-core:7.5.12") {
-        exclude group: "net.kyori"
-    }
-    compileOnly("com.intellectualsites.plotsquared:plotsquared-bukkit:7.5.12") {
-        exclude group: "net.kyori"
-    }
-
     // Towny
     compileOnly "com.palmergames.bukkit.towny:towny:0.102.0.13"
 
-    // SuperiorSkyblock
-    compileOnly "com.bgsoftware:SuperiorSkyblockAPI:2025.2.1"
-
-    // GriefDefender
-    compileOnly("com.griefdefender:api:2.1.1-SNAPSHOT") {
-        exclude group: "net.kyori"
-    }
-
-    // Lands
-    compileOnly "com.github.angeschossen:LandsAPI:7.25.4"
-
-    // Bentobox (compileOnly to avoid bundling)
-    compileOnly "world.bentobox:bentobox:2.7.0-SNAPSHOT"
-
-    // ItemAdder
-    compileOnly "com.github.LoneDev6:api-itemsadder:3.6.1"
-
     // CoreProtect
     compileOnly "net.coreprotect:coreprotect:23.2"
-
-    // Bolt
-    compileOnly "org.popcraft:bolt-bukkit:1.1.33"
-    compileOnly "org.popcraft:bolt-common:1.2.86"
 
     // Lombok
     compileOnly "org.projectlombok:lombok:1.18.44"

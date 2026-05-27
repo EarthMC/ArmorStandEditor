@@ -105,7 +105,7 @@ public class UpdateChecker implements Listener {
 
         } catch (Exception exception) {
             plugin.getLogger().warning("Failed to get the latest version from Hangar. Please check your internet connection.");
-            plugin.debug.log("Error while checking for updates: " + exception.getMessage());
+            Debug.log("Error while checking for updates: " + exception.getMessage());
             return false;
         }
     }
