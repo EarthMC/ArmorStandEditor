@@ -203,12 +203,10 @@ public class PlayerEditorManager implements Listener {
                 return;
             }
 
-            // TODO: Check dupe
             if (player.getInventory().getItemInMainHand().getType().equals(Material.GLOW_INK_SAC) //attempt glowing
                 && player.hasPermission("asedit.basic")
                 && plugin.glowItemFrames && player.isSneaking()
             ) {
-
                 ItemStack glowSacs = player.getInventory().getItemInMainHand();
                 ItemStack contents = null;
                 Rotation rotation = null;

@@ -229,42 +229,40 @@ public class CommandEx implements CommandExecutor {
     }
 
     private void commandAdj(Player player, String[] args) {
-        if (args.length == 0) {
+        if (args.length <= 1) {
             player.sendMessage(plugin.getLang().getMessage("noadjcom", "warn"));
             player.sendMessage(listAdjustment);
+            return;
         }
 
-        if (args.length > 1) {
-            for (AdjustmentMode adj : AdjustmentMode.values()) {
-                if (adj.toString().toLowerCase().contentEquals(args[1].toLowerCase())) {
-                    plugin.editorManager.getPlayerEditor(player.getUniqueId()).setAdjMode(adj);
-                    return;
-                }
+        for (AdjustmentMode adj : AdjustmentMode.values()) {
+            if (adj.toString().toLowerCase().contentEquals(args[1].toLowerCase())) {
+                plugin.editorManager.getPlayerEditor(player.getUniqueId()).setAdjMode(adj);
+                return;
             }
-            player.sendMessage(listAdjustment);
         }
+        player.sendMessage(listAdjustment);
     }
 
     private void commandAxis(Player player, String[] args) {
-        if (args.length == 0) {
+        if (args.length <= 1) {
             player.sendMessage(plugin.getLang().getMessage("noaxiscom", "warn"));
             player.sendMessage(listAxis);
+            return;
         }
 
-        if (args.length > 1) {
-            for (Axis axis : Axis.values()) {
-                if (axis.toString().toLowerCase().contentEquals(args[1].toLowerCase())) {
-                    Debug.log("Player '" + player.getName() + "' sets the axis to " + axis);
-                    plugin.editorManager.getPlayerEditor(player.getUniqueId()).setAxis(axis);
-                    return;
-                }
+        for (Axis axis : Axis.values()) {
+            if (axis.toString().toLowerCase().contentEquals(args[1].toLowerCase())) {
+                Debug.log("Player '" + player.getName() + "' sets the axis to " + axis);
+                plugin.editorManager.getPlayerEditor(player.getUniqueId()).setAxis(axis);
+                return;
             }
-            player.sendMessage(listAxis);
         }
+        player.sendMessage(listAxis);
     }
 
     private void commandMode(Player player, String[] args) {
-        if (args.length == 1) {
+        if (args.length <= 1) {
             player.sendMessage(plugin.getLang().getMessage("nomodecom", "warn"));
             player.sendMessage(listMode);
             return; // early return lets us drop the second `if` entirely
