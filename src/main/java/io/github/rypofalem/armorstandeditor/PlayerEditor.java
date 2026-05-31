@@ -44,8 +44,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.EulerAngle;
 
 import java.util.ArrayList;
@@ -433,7 +431,7 @@ public class PlayerEditor {
 
                 SharedUtil.setLocked(armorStand, false);
                 getPlayer().playSound(getPlayer().getLocation(), Sound.ENTITY_ITEM_BREAK, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                armorStand.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 50, 1, false, false)); //300 Ticks = 15 seconds
+                highlight(armorStand);
             } else {
                 Debug.log("Adding DisabledSlots on ArmorStand near the Player " + getPlayer().displayName());
                 for (final EquipmentSlot slot : EquipmentSlot.values()) { //LOCKED
@@ -443,7 +441,7 @@ public class PlayerEditor {
 
                 SharedUtil.setLocked(armorStand, true);
                 getPlayer().playSound(getPlayer().getLocation(), Sound.ITEM_ARMOR_EQUIP_WOLF, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                armorStand.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 50, 1, false, false)); //300 Ticks = 15 seconds
+                highlight(armorStand);
             }
 
             sendMessage("disabledslots", null);
@@ -705,8 +703,9 @@ public class PlayerEditor {
     }
 
     private void highlight(ArmorStand armorStand) {
-        armorStand.removePotionEffect(PotionEffectType.GLOWING);
-        armorStand.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 50, 1, false, false)); //300 Ticks = 15 seconds
+        if (armorStand.isGlowing()) return;
+        armorStand.setGlowing(true);
+        armorStand.getScheduler().runDelayed(plugin, _ -> armorStand.setGlowing(false), null, 50);
     }
 
     public PlayerEditorManager getManager() {
