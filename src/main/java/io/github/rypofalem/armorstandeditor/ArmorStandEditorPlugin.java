@@ -141,8 +141,8 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
         scheduler = new Scheduler(this);
 
         //START ---  Load Messages in Console
-        getLogger().info("======= ArmorStandEditor =======");
-        getLogger().info("Plugin Version: v" + ASE_VERSION);
+        // getLogger().info("======= ArmorStandEditor =======");
+        // getLogger().info("Plugin Version: v" + ASE_VERSION);
 
         hasPaper = getHasPaper();
         hasFolia = getHasFolia();
@@ -150,7 +150,7 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
         //Get NMS Version
         nmsVersion = getServer().getMinecraftVersion();
         versionLogPrefix = warningMCVer + nmsVersion;
-        doVersionCheck();
+        // doVersionCheck();
 
         //If Paper and Folia are both FALSE - Disable the plugin
         if (!hasPaper && !hasFolia) {
@@ -159,7 +159,7 @@ public class ArmorStandEditorPlugin extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         } else {
-            getLogger().log(Level.INFO, "Paper/Folia Present? {0}", hasPaper);
+            // getLogger().log(Level.INFO, "Paper/Folia Present? {0}", hasPaper);
         }
 
         //Run the update checker if enabled in config
